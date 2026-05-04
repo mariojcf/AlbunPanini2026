@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panini 2026 Collector - Multiuser</title>
+    <title>Panini 2026 Collector Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,6 +14,7 @@
             --text: #2d3436;
             --gray-light: #e0e0e0;
             --gray-text: #636e72;
+            --success: #27ae60;
         }
 
         body { 
@@ -27,7 +28,7 @@
         }
         
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        h1 { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--primary); }
+        h1 { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--primary); text-transform: capitalize; }
         
         .stats-pill { background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: 500; }
         
@@ -37,7 +38,7 @@
         .controls { display: flex; gap: 8px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
         .btn-tool { 
             background: white; border: 1px solid var(--gray-light); color: var(--gray-text); padding: 8px 16px; 
-            border-radius: 12px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; transition: 0.2s;
+            border-radius: 12px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; transition: 0.2s; font-weight: 500;
         }
         .btn-tool.active { background: var(--primary); color: white; border-color: var(--primary); }
 
@@ -70,14 +71,14 @@
             background: white; padding: 12px; border-top: 1px solid var(--gray-light);
             display: flex; justify-content: space-around; 
         }
-        .footer-btn { background: none; border: none; color: var(--gray-text); font-size: 0.8rem; cursor: pointer; font-weight: 500; }
+        .footer-btn { background: none; border: none; color: var(--gray-text); font-size: 0.8rem; cursor: pointer; font-weight: 600; }
 
-        #loading-overlay { position: fixed; inset: 0; background: white; display: flex; justify-content: center; align-items: center; z-index: 1000; font-weight: 700; color: var(--primary); }
+        #loading-overlay { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; font-weight: 700; color: var(--primary); text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay">Cargando progreso...</div>
+<div id="loading-overlay">Sincronizando con la nube...</div>
 
 <header>
     <div class="header-top">
@@ -89,9 +90,10 @@
     <div class="controls">
         <button class="btn-tool active" onclick="filterBy('TODOS', this)">Todos</button>
         <button class="btn-tool" onclick="filterBy('FWC', this)">Especiales</button>
-        <button class="btn-tool" onclick="filterBy('A-F', this)">Grupos A-F</button>
-        <button class="btn-tool" onclick="filterBy('G-L', this)">Grupos G-L</button>
-        <button class="btn-tool" onclick="shareApp()" style="border-color: #25D366; color: #25D366; font-weight: bold;">📲 Compartir</button>
+        <button class="btn-tool" onclick="filterBy('A-F', this)">A-F</button>
+        <button class="btn-tool" onclick="filterBy('G-L', this)">G-L</button>
+        <button class="btn-tool" onclick="compareAlbums()" style="border-color: var(--accent); color: var(--accent);">🔍 Comparar</button>
+        <button class="btn-tool" onclick="shareApp()" style="border-color: var(--success); color: var(--success);">📲 Compartir</button>
     </div>
 </header>
 
@@ -100,14 +102,14 @@
 <footer>
     <button class="footer-btn" onclick="filterStatus('faltan')">❌ Faltan</button>
     <button class="footer-btn" onclick="filterStatus('repes')">🔄 Repes</button>
-    <button class="footer-btn" onclick="location.reload()">🏠 Todo</button>
+    <button class="footer-btn" onclick="location.reload()">🏠 Mi Inicio</button>
 </footer>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Credenciales de Mario Javier Corado Falla
+    // --- Credenciales del Proyecto de Mario ---
     const firebaseConfig = {
         apiKey: "AIzaSyCe4xj2-ytUFOZR7wMoJIsh0YVj6Ot-cTI",
         authDomain: "albumpanini-79b51.firebaseapp.com",
@@ -121,7 +123,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Lógica multiusuario basada en URL
+    // Manejo de Usuario dinámico por URL (?u=Nombre)
     const params = new URLSearchParams(window.location.search);
     const username = params.get('u') || 'Invitado';
     document.getElementById('user-title').innerText = `Álbum de ${username}`;
@@ -129,44 +131,94 @@
     const albumId = `album_${username.toLowerCase().trim().replace(/\s+/g, '_')}`;
     const albumRef = doc(db, "colecciones", albumId);
 
-    let album = {};
+    let myAlbum = {};
 
-    // Sincronización en tiempo real con la nube
+    // Sincronización en Tiempo Real
     onSnapshot(albumRef, (snapshot) => {
         if (snapshot.exists()) {
-            album = snapshot.data();
-            updateAllUI();
-        } else {
-            album = {};
+            myAlbum = snapshot.data();
             updateAllUI();
         }
         document.getElementById('loading-overlay').style.display = 'none';
     });
 
-    async function sync() {
-        await setDoc(albumRef, album);
+    async function save() {
+        await setDoc(albumRef, myAlbum);
     }
 
+    // Funciones de interacción
     window.toggleSticker = function(id) {
-        if (!album[id]) album[id] = { count: 1 };
-        else album[id].count = album[id].count > 0 ? 0 : 1;
+        if (!myAlbum[id]) myAlbum[id] = { count: 1 };
+        else myAlbum[id].count = myAlbum[id].count > 0 ? 0 : 1;
         updateStickerUI(id);
-        sync();
+        save();
     };
 
     window.addRepeat = function(id) {
-        if (!album[id]) album[id] = { count: 2 };
-        else album[id].count++;
+        if (!myAlbum[id]) myAlbum[id] = { count: 2 };
+        else myAlbum[id].count++;
         updateStickerUI(id);
-        sync();
+        save();
     };
 
+    // Nueva Función: Comparar con Amigos
+    window.compareAlbums = async function() {
+        const friend = prompt("¿Con quién quieres comparar? (Escribe su nombre exacto)");
+        if (!friend) return;
+
+        const friendId = `album_${friend.toLowerCase().trim().replace(/\s+/g, '_')}`;
+        const friendRef = doc(db, "colecciones", friendId);
+        
+        document.getElementById('loading-overlay').innerText = `Buscando repetidas de ${friend}...`;
+        document.getElementById('loading-overlay').style.display = 'flex';
+
+        try {
+            const snap = await getDoc(friendRef);
+            if (snap.exists()) {
+                const friendData = snap.data();
+                let matches = 0;
+
+                for (let i = 1; i <= 980; i++) {
+                    const el = document.getElementById(`s-${i}`);
+                    const friendHasRepeat = friendData[i] && friendData[i].count > 1;
+                    const iNeedIt = !myAlbum[i] || myAlbum[i].count === 0;
+
+                    if (friendHasRepeat && iNeedIt) {
+                        el.style.border = "3px solid var(--success)";
+                        el.style.backgroundColor = "#eafff0";
+                        el.style.opacity = "1";
+                        matches++;
+                    } else {
+                        el.style.opacity = "0.2";
+                    }
+                }
+                alert(`¡Éxito! ${friend} tiene ${matches} repetidas que tú no tienes. (Resaltadas en verde)`);
+            } else {
+                alert("No encontré el álbum de esa persona. Verifica el nombre.");
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+    };
+
+    window.shareApp = function() {
+        const name = prompt("¿Para quién es el link?");
+        if (name) {
+            const url = `${window.location.origin}${window.location.pathname}?u=${encodeURIComponent(name)}`;
+            const text = encodeURIComponent(`⚽ ¡Lleva el control de tu álbum! Entra aquí para tu propio registro: ${url}`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+    };
+
+    // Motor de la Interfaz
     function updateStickerUI(id) {
         const el = document.getElementById(`s-${id}`);
         if (!el) return;
-        const state = album[id] || { count: 0 };
-        el.className = `sticker ${state.count > 0 ? 'owned' : ''} ${state.count > 1 ? 'repeated' : ''}`;
-        el.querySelector('.badge-repeat').innerText = state.count > 1 ? state.count - 1 : 0;
+        const data = myAlbum[id] || { count: 0 };
+        el.className = `sticker ${data.count > 0 ? 'owned' : ''} ${data.count > 1 ? 'repeated' : ''}`;
+        el.querySelector('.badge-repeat').innerText = data.count > 1 ? data.count - 1 : 0;
         updateStats();
     }
 
@@ -175,46 +227,40 @@
     }
 
     function updateStats() {
-        const owned = Object.values(album).filter(v => v.count > 0).length;
+        const owned = Object.values(myAlbum).filter(v => v.count > 0).length;
         document.getElementById('progress-bar').style.width = (owned / 980 * 100) + "%";
         document.getElementById('stats-text').innerText = `${owned} / 980`;
     }
 
-    // Compartir por WhatsApp
-    window.shareApp = function() {
-        const friend = prompt("¿Cómo se llama tu amigo/a?");
-        if (friend) {
-            const url = `${window.location.origin}${window.location.pathname}?u=${encodeURIComponent(friend)}`;
-            const text = encodeURIComponent(`¡Hola! Te comparto mi app para controlar las estampas del Mundial. Entra aquí para tu propio álbum: ${url}`);
-            window.open(`https://wa.me/?text=${text}`, '_blank');
-        }
-    };
+    function createGrid() {
+        const main = document.getElementById('album-content');
+        const sections = [
+            { t: "🏆 FIFA & Estadios", s: 1, e: 100, c: "FWC" },
+            { t: "⚽ Selecciones A - F", s: 101, e: 540, c: "A-F" },
+            { t: "⚽ Selecciones G - L", s: 541, e: 980, c: "G-L" }
+        ];
 
-    // Renderizado de la estructura
-    const main = document.getElementById('album-content');
-    function renderSection(title, start, end, cat) {
-        const sec = document.createElement('div');
-        sec.className = 'section-group';
-        sec.setAttribute('data-category', cat);
-        sec.innerHTML = `<div class="section-title">${title}</div>`;
-        const div = document.createElement('div');
-        div.className = 'grid';
-        for (let i = start; i <= end; i++) {
-            const s = document.createElement('div');
-            s.className = 'sticker';
-            s.id = `s-${i}`;
-            s.innerHTML = `<span>${i}</span><div class="badge-repeat">0</div>`;
-            s.onclick = () => window.toggleSticker(i);
-            s.oncontextmenu = (e) => { e.preventDefault(); window.addRepeat(i); };
-            div.appendChild(s);
-        }
-        sec.appendChild(div);
-        main.appendChild(sec);
+        sections.forEach(sec => {
+            const group = document.createElement('div');
+            group.className = 'section-group';
+            group.setAttribute('data-category', sec.c);
+            group.innerHTML = `<div class="section-title">${sec.t}</div>`;
+            const grid = document.createElement('div');
+            grid.className = 'grid';
+            
+            for (let i = sec.s; i <= sec.e; i++) {
+                const s = document.createElement('div');
+                s.className = 'sticker';
+                s.id = `s-${i}`;
+                s.innerHTML = `<span>${i}</span><div class="badge-repeat">0</div>`;
+                s.onclick = () => window.toggleSticker(i);
+                s.oncontextmenu = (e) => { e.preventDefault(); window.addRepeat(i); };
+                grid.appendChild(s);
+            }
+            group.appendChild(grid);
+            main.appendChild(group);
+        });
     }
-
-    renderSection("🏆 FIFA & Estadios", 1, 100, "FWC");
-    renderSection("⚽ Selecciones A - F", 101, 540, "A-F");
-    renderSection("⚽ Selecciones G - L", 541, 980, "G-L");
 
     window.filterBy = (cat, btn) => {
         document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
@@ -225,11 +271,16 @@
     window.filterStatus = (status) => {
         document.querySelectorAll('.sticker').forEach(el => {
             const id = el.id.split('-')[1];
-            const data = album[id] || { count: 0 };
+            const data = myAlbum[id] || { count: 0 };
+            el.style.opacity = "1";
+            el.style.border = "1px solid var(--gray-light)";
+            el.style.backgroundColor = "white";
             if(status === 'faltan') el.style.display = data.count === 0 ? 'flex' : 'none';
             if(status === 'repes') el.style.display = data.count > 1 ? 'flex' : 'none';
         });
     };
+
+    createGrid();
 </script>
 </body>
 </html>
