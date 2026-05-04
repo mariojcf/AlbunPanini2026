@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panini 2026 Collector - Multiuser</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #800020;
+            --accent: #d4af37;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #2d3436;
+            --gray-light: #e0e0e0;
+            --gray-text: #636e72;
+        }
+
+        body { 
+            font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); 
+            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+        }
+
+        header { 
+            background: var(--card-bg); padding: 15px 20px; border-bottom: 1px solid var(--gray-light);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 10;
+        }
+        
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        h1 { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--primary); }
+        
+        .stats-pill { background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: 500; }
+        
+        .progress-container { width: 100%; background: var(--gray-light); height: 8px; border-radius: 10px; overflow: hidden; }
+        #progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .controls { display: flex; gap: 8px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
+        .btn-tool { 
+            background: white; border: 1px solid var(--gray-light); color: var(--gray-text); padding: 8px 16px; 
+            border-radius: 12px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; transition: 0.2s;
+        }
+        .btn-tool.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        main { flex: 1; overflow-y: auto; padding: 15px; scroll-behavior: smooth; }
+        .section-group { margin-bottom: 25px; }
+        .section-title { color: var(--primary); font-size: 1rem; font-weight: 700; margin: 15px 0 10px; display: flex; align-items: center; gap: 8px; }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--gray-light); }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 10px; }
+
+        .sticker { 
+            aspect-ratio: 1/1; background: var(--card-bg); border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 1px solid var(--gray-light); transition: all 0.2s; position: relative; cursor: pointer;
+        }
+
+        .sticker span { font-size: 1rem; font-weight: 600; color: var(--gray-text); }
+        .sticker.owned { background: #fff9f9; border: 2px solid var(--primary); transform: translateY(-2px); }
+        .sticker.owned span { color: var(--primary); }
+        
+        .badge-repeat {
+            position: absolute; top: -6px; right: -6px; background: var(--accent);
+            color: white; width: 20px; height: 20px; border-radius: 50%;
+            font-size: 0.75rem; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; border: 2px solid white; display: none;
+        }
+        .sticker.repeated .badge-repeat { display: flex; }
+
+        footer { 
+            background: white; padding: 12px; border-top: 1px solid var(--gray-light);
+            display: flex; justify-content: space-around; 
+        }
+        .footer-btn { background: none; border: none; color: var(--gray-text); font-size: 0.8rem; cursor: pointer; font-weight: 500; }
+
+        #loading-overlay { position: fixed; inset: 0; background: white; display: flex; justify-content: center; align-items: center; z-index: 1000; font-weight: 700; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<div id="loading-overlay">Cargando progreso...</div>
+
+<header>
+    <div class="header-top">
+        <h1 id="user-title">Cargando...</h1>
+        <div class="stats-pill" id="stats-text">0 / 980</div>
+    </div>
+    <div class="progress-container"><div id="progress-bar"></div></div>
+    
+    <div class="controls">
+        <button class="btn-tool active" onclick="filterBy('TODOS', this)">Todos</button>
+        <button class="btn-tool" onclick="filterBy('FWC', this)">Especiales</button>
+        <button class="btn-tool" onclick="filterBy('A-F', this)">Grupos A-F</button>
+        <button class="btn-tool" onclick="filterBy('G-L', this)">Grupos G-L</button>
+        <button class="btn-tool" onclick="shareApp()" style="border-color: #25D366; color: #25D366; font-weight: bold;">📲 Compartir</button>
+    </div>
+</header>
+
+<main id="album-content"></main>
+
+<footer>
+    <button class="footer-btn" onclick="filterStatus('faltan')">❌ Faltan</button>
+    <button class="footer-btn" onclick="filterStatus('repes')">🔄 Repes</button>
+    <button class="footer-btn" onclick="location.reload()">🏠 Todo</button>
+</footer>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Credenciales de Mario Javier Corado Falla
+    const firebaseConfig = {
+        apiKey: "AIzaSyCe4xj2-ytUFOZR7wMoJIsh0YVj6Ot-cTI",
+        authDomain: "albumpanini-79b51.firebaseapp.com",
+        projectId: "albumpanini-79b51",
+        storageBucket: "albumpanini-79b51.firebasestorage.app",
+        messagingSenderId: "285587534133",
+        appId: "1:285587534133:web:50cef4fd61455e494f5c7c",
+        measurementId: "G-X5VTNR4LJJ"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Lógica multiusuario basada en URL
+    const params = new URLSearchParams(window.location.search);
+    const username = params.get('u') || 'Invitado';
+    document.getElementById('user-title').innerText = `Álbum de ${username}`;
+
+    const albumId = `album_${username.toLowerCase().trim().replace(/\s+/g, '_')}`;
+    const albumRef = doc(db, "colecciones", albumId);
+
+    let album = {};
+
+    // Sincronización en tiempo real con la nube
+    onSnapshot(albumRef, (snapshot) => {
+        if (snapshot.exists()) {
+            album = snapshot.data();
+            updateAllUI();
+        } else {
+            album = {};
+            updateAllUI();
+        }
+        document.getElementById('loading-overlay').style.display = 'none';
+    });
+
+    async function sync() {
+        await setDoc(albumRef, album);
+    }
+
+    window.toggleSticker = function(id) {
+        if (!album[id]) album[id] = { count: 1 };
+        else album[id].count = album[id].count > 0 ? 0 : 1;
+        updateStickerUI(id);
+        sync();
+    };
+
+    window.addRepeat = function(id) {
+        if (!album[id]) album[id] = { count: 2 };
+        else album[id].count++;
+        updateStickerUI(id);
+        sync();
+    };
+
+    function updateStickerUI(id) {
+        const el = document.getElementById(`s-${id}`);
+        if (!el) return;
+        const state = album[id] || { count: 0 };
+        el.className = `sticker ${state.count > 0 ? 'owned' : ''} ${state.count > 1 ? 'repeated' : ''}`;
+        el.querySelector('.badge-repeat').innerText = state.count > 1 ? state.count - 1 : 0;
+        updateStats();
+    }
+
+    function updateAllUI() {
+        for (let i = 1; i <= 980; i++) updateStickerUI(i);
+    }
+
+    function updateStats() {
+        const owned = Object.values(album).filter(v => v.count > 0).length;
+        document.getElementById('progress-bar').style.width = (owned / 980 * 100) + "%";
+        document.getElementById('stats-text').innerText = `${owned} / 980`;
+    }
+
+    // Compartir por WhatsApp
+    window.shareApp = function() {
+        const friend = prompt("¿Cómo se llama tu amigo/a?");
+        if (friend) {
+            const url = `${window.location.origin}${window.location.pathname}?u=${encodeURIComponent(friend)}`;
+            const text = encodeURIComponent(`¡Hola! Te comparto mi app para controlar las estampas del Mundial. Entra aquí para tu propio álbum: ${url}`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
+        }
+    };
+
+    // Renderizado de la estructura
+    const main = document.getElementById('album-content');
+    function renderSection(title, start, end, cat) {
+        const sec = document.createElement('div');
+        sec.className = 'section-group';
+        sec.setAttribute('data-category', cat);
+        sec.innerHTML = `<div class="section-title">${title}</div>`;
+        const div = document.createElement('div');
+        div.className = 'grid';
+        for (let i = start; i <= end; i++) {
+            const s = document.createElement('div');
+            s.className = 'sticker';
+            s.id = `s-${i}`;
+            s.innerHTML = `<span>${i}</span><div class="badge-repeat">0</div>`;
+            s.onclick = () => window.toggleSticker(i);
+            s.oncontextmenu = (e) => { e.preventDefault(); window.addRepeat(i); };
+            div.appendChild(s);
+        }
+        sec.appendChild(div);
+        main.appendChild(sec);
+    }
+
+    renderSection("🏆 FIFA & Estadios", 1, 100, "FWC");
+    renderSection("⚽ Selecciones A - F", 101, 540, "A-F");
+    renderSection("⚽ Selecciones G - L", 541, 980, "G-L");
+
+    window.filterBy = (cat, btn) => {
+        document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.section-group').forEach(el => el.style.display = (cat === 'TODOS' || el.getAttribute('data-category') === cat) ? 'block' : 'none');
+    };
+
+    window.filterStatus = (status) => {
+        document.querySelectorAll('.sticker').forEach(el => {
+            const id = el.id.split('-')[1];
+            const data = album[id] || { count: 0 };
+            if(status === 'faltan') el.style.display = data.count === 0 ? 'flex' : 'none';
+            if(status === 'repes') el.style.display = data.count > 1 ? 'flex' : 'none';
+        });
+    };
+</script>
+</body>
+</html>
