@@ -35,12 +35,19 @@
         .progress-container { width: 100%; background: var(--gray-light); height: 8px; border-radius: 10px; overflow: hidden; }
         #progress-bar { height: 100%; background: var(--primary); width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        .controls { display: flex; gap: 8px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
+        .controls { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
         .btn-tool { 
             background: white; border: 1px solid var(--gray-light); color: var(--gray-text); padding: 8px 16px; 
             border-radius: 12px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; transition: 0.2s; font-weight: 500;
         }
         .btn-tool.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Estilo para el nombre del país en el filtro */
+        .country-header-label {
+            width: 100%; background: var(--accent); color: white; padding: 10px;
+            border-radius: 8px; margin-bottom: 15px; font-weight: 700;
+            text-align: center; text-transform: uppercase; letter-spacing: 1px;
+        }
 
         main { flex: 1; overflow-y: auto; padding: 15px; scroll-behavior: smooth; }
         .section-group { margin-bottom: 25px; }
@@ -95,6 +102,44 @@
         <button class="btn-tool" onclick="compareAlbums()" style="border-color: var(--accent); color: var(--accent);">🔍 Comparar</button>
         <button class="btn-tool" onclick="shareApp()" style="border-color: var(--success); color: var(--success);">📲 Compartir</button>
     </div>
+
+    <div class="controls">
+        <select id="country-filter" class="btn-tool" style="width: 100%; border-color: var(--primary);" onchange="filterByCountry(this.value)">
+            <option value="ALL">🔍 Buscar por País...</option>
+            <option value="101-120">Qatar</option>
+            <option value="121-140">Ecuador</option>
+            <option value="141-160">Senegal</option>
+            <option value="161-180">Países Bajos</option>
+            <option value="181-200">Inglaterra</option>
+            <option value="201-220">Irán</option>
+            <option value="221-240">EE. UU.</option>
+            <option value="241-260">Gales</option>
+            <option value="261-280">Argentina</option>
+            <option value="281-300">Arabia Saudita</option>
+            <option value="301-320">México</option>
+            <option value="321-340">Polonia</option>
+            <option value="341-360">Francia</option>
+            <option value="361-380">Australia</option>
+            <option value="381-400">Dinamarca</option>
+            <option value="401-420">Túnez</option>
+            <option value="421-440">España</option>
+            <option value="441-460">Costa Rica</option>
+            <option value="461-480">Alemania</option>
+            <option value="481-500">Japón</option>
+            <option value="501-520">Bélgica</option>
+            <option value="521-540">Canadá</option>
+            <option value="541-560">Marruecos</option>
+            <option value="561-580">Croacia</option>
+            <option value="581-600">Brasil</option>
+            <option value="601-620">Serbia</option>
+            <option value="621-640">Suiza</option>
+            <option value="641-660">Camerún</option>
+            <option value="661-680">Portugal</option>
+            <option value="681-700">Ghana</option>
+            <option value="701-720">Uruguay</option>
+            <option value="721-740">Corea del Sur</option>
+        </select>
+    </div>
 </header>
 
 <main id="album-content"></main>
@@ -109,7 +154,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // --- Credenciales del Proyecto de Mario ---
     const firebaseConfig = {
         apiKey: "AIzaSyCe4xj2-ytUFOZR7wMoJIsh0YVj6Ot-cTI",
         authDomain: "albumpanini-79b51.firebaseapp.com",
@@ -123,7 +167,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Manejo de Usuario dinámico por URL (?u=Nombre)
     const params = new URLSearchParams(window.location.search);
     const username = params.get('u') || 'Invitado';
     document.getElementById('user-title').innerText = `Álbum de ${username}`;
@@ -133,7 +176,6 @@
 
     let myAlbum = {};
 
-    // Sincronización en Tiempo Real
     onSnapshot(albumRef, (snapshot) => {
         if (snapshot.exists()) {
             myAlbum = snapshot.data();
@@ -146,7 +188,6 @@
         await setDoc(albumRef, myAlbum);
     }
 
-    // Funciones de interacción
     window.toggleSticker = function(id) {
         if (!myAlbum[id]) myAlbum[id] = { count: 1 };
         else myAlbum[id].count = myAlbum[id].count > 0 ? 0 : 1;
@@ -161,58 +202,76 @@
         save();
     };
 
-    // Nueva Función: Comparar con Amigos
-    window.compareAlbums = async function() {
-        const friend = prompt("¿Con quién quieres comparar? (Escribe su nombre exacto)");
-        if (!friend) return;
+    window.filterByCountry = (range) => {
+        document.querySelectorAll('.country-header-label').forEach(el => el.remove());
 
+        if (range === 'ALL') {
+            document.querySelectorAll('.section-group').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.sticker').forEach(el => el.style.display = 'flex');
+            return;
+        }
+
+        const [start, end] = range.split('-').map(Number);
+        const select = document.getElementById('country-filter');
+        const countryName = select.options[select.selectedIndex].text;
+
+        document.querySelectorAll('.sticker').forEach(el => {
+            const id = parseInt(el.id.split('-')[1]);
+            el.style.display = (id >= start && id <= end) ? 'flex' : 'none';
+        });
+
+        document.querySelectorAll('.section-group').forEach(group => {
+            const visibleStickers = group.querySelectorAll('.sticker[style*="display: flex"]');
+            if (visibleStickers.length > 0) {
+                group.style.display = 'block';
+                const label = document.createElement('div');
+                label.className = 'country-header-label';
+                label.innerText = `📍 Selección de ${countryName}`;
+                group.prepend(label);
+            } else {
+                group.style.display = 'none';
+            }
+        });
+    };
+
+    window.compareAlbums = async function() {
+        const friend = prompt("¿Con quién quieres comparar? (Escribe su nombre)");
+        if (!friend) return;
         const friendId = `album_${friend.toLowerCase().trim().replace(/\s+/g, '_')}`;
         const friendRef = doc(db, "colecciones", friendId);
-        
-        document.getElementById('loading-overlay').innerText = `Buscando repetidas de ${friend}...`;
         document.getElementById('loading-overlay').style.display = 'flex';
-
         try {
             const snap = await getDoc(friendRef);
             if (snap.exists()) {
                 const friendData = snap.data();
                 let matches = 0;
-
                 for (let i = 1; i <= 980; i++) {
                     const el = document.getElementById(`s-${i}`);
                     const friendHasRepeat = friendData[i] && friendData[i].count > 1;
                     const iNeedIt = !myAlbum[i] || myAlbum[i].count === 0;
-
                     if (friendHasRepeat && iNeedIt) {
                         el.style.border = "3px solid var(--success)";
                         el.style.backgroundColor = "#eafff0";
-                        el.style.opacity = "1";
                         matches++;
                     } else {
                         el.style.opacity = "0.2";
                     }
                 }
-                alert(`¡Éxito! ${friend} tiene ${matches} repetidas que tú no tienes. (Resaltadas en verde)`);
-            } else {
-                alert("No encontré el álbum de esa persona. Verifica el nombre.");
+                alert(`¡Éxito! ${friend} tiene ${matches} repetidas que tú necesitas.`);
             }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            document.getElementById('loading-overlay').style.display = 'none';
-        }
+        } catch (e) { console.error(e); }
+        finally { document.getElementById('loading-overlay').style.display = 'none'; }
     };
 
     window.shareApp = function() {
         const name = prompt("¿Para quién es el link?");
         if (name) {
             const url = `${window.location.origin}${window.location.pathname}?u=${encodeURIComponent(name)}`;
-            const text = encodeURIComponent(`⚽ ¡Lleva el control de tu álbum! Entra aquí para tu propio registro: ${url}`);
+            const text = encodeURIComponent(`⚽ ¡Lleva el control de tu álbum! Entra aquí: ${url}`);
             window.open(`https://wa.me/?text=${text}`, '_blank');
         }
     };
 
-    // Motor de la Interfaz
     function updateStickerUI(id) {
         const el = document.getElementById(`s-${id}`);
         if (!el) return;
@@ -247,7 +306,6 @@
             group.innerHTML = `<div class="section-title">${sec.t}</div>`;
             const grid = document.createElement('div');
             grid.className = 'grid';
-            
             for (let i = sec.s; i <= sec.e; i++) {
                 const s = document.createElement('div');
                 s.className = 'sticker';
@@ -265,16 +323,20 @@
     window.filterBy = (cat, btn) => {
         document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        document.querySelectorAll('.section-group').forEach(el => el.style.display = (cat === 'TODOS' || el.getAttribute('data-category') === cat) ? 'block' : 'none');
+        document.querySelectorAll('.country-header-label').forEach(el => el.remove());
+        document.querySelectorAll('.section-group').forEach(el => {
+            el.style.display = (cat === 'TODOS' || el.getAttribute('data-category') === cat) ? 'block' : 'none';
+        });
+        document.querySelectorAll('.sticker').forEach(el => {
+            el.style.display = 'flex';
+            el.style.opacity = '1';
+        });
     };
 
     window.filterStatus = (status) => {
         document.querySelectorAll('.sticker').forEach(el => {
             const id = el.id.split('-')[1];
             const data = myAlbum[id] || { count: 0 };
-            el.style.opacity = "1";
-            el.style.border = "1px solid var(--gray-light)";
-            el.style.backgroundColor = "white";
             if(status === 'faltan') el.style.display = data.count === 0 ? 'flex' : 'none';
             if(status === 'repes') el.style.display = data.count > 1 ? 'flex' : 'none';
         });
