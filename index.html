@@ -42,7 +42,6 @@
         }
         .btn-tool.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* Estilo para el nombre del país en el filtro */
         .country-header-label {
             width: 100%; background: var(--accent); color: white; padding: 10px;
             border-radius: 8px; margin-bottom: 15px; font-weight: 700;
@@ -90,7 +89,7 @@
 <header>
     <div class="header-top">
         <h1 id="user-title">Cargando...</h1>
-        <div class="stats-pill" id="stats-text">0 / 980</div>
+        <div class="stats-pill" id="stats-text">0 / 1060</div>
     </div>
     <div class="progress-container"><div id="progress-bar"></div></div>
     
@@ -103,41 +102,82 @@
         <button class="btn-tool" onclick="shareApp()" style="border-color: var(--success); color: var(--success);">📲 Compartir</button>
     </div>
 
+    <!-- Filtro por País Actualizado -->
     <div class="controls">
         <select id="country-filter" class="btn-tool" style="width: 100%; border-color: var(--primary);" onchange="filterByCountry(this.value)">
             <option value="ALL">🔍 Buscar por País...</option>
-            <option value="101-120">Qatar</option>
-            <option value="121-140">Ecuador</option>
-            <option value="141-160">Senegal</option>
-            <option value="161-180">Países Bajos</option>
-            <option value="181-200">Inglaterra</option>
-            <option value="201-220">Irán</option>
-            <option value="221-240">EE. UU.</option>
-            <option value="241-260">Gales</option>
-            <option value="261-280">Argentina</option>
-            <option value="281-300">Arabia Saudita</option>
-            <option value="301-320">México</option>
-            <option value="321-340">Polonia</option>
-            <option value="341-360">Francia</option>
-            <option value="361-380">Australia</option>
-            <option value="381-400">Dinamarca</option>
-            <option value="401-420">Túnez</option>
-            <option value="421-440">España</option>
-            <option value="441-460">Costa Rica</option>
-            <option value="461-480">Alemania</option>
-            <option value="481-500">Japón</option>
-            <option value="501-520">Bélgica</option>
-            <option value="521-540">Canadá</option>
-            <option value="541-560">Marruecos</option>
-            <option value="561-580">Croacia</option>
-            <option value="581-600">Brasil</option>
-            <option value="601-620">Serbia</option>
-            <option value="621-640">Suiza</option>
-            <option value="641-660">Camerún</option>
-            <option value="661-680">Portugal</option>
-            <option value="681-700">Ghana</option>
-            <option value="701-720">Uruguay</option>
-            <option value="721-740">Corea del Sur</option>
+            <optgroup label="Grupo A">
+                <option value="101-120">México</option>
+                <option value="121-140">Sudáfrica</option>
+                <option value="141-160">República de Corea</option>
+                <option value="161-180">República Checa</option>
+            </optgroup>
+            <optgroup label="Grupo B">
+                <option value="181-200">Canadá</option>
+                <option value="201-220">Bosnia y Herzegovina</option>
+                <option value="221-240">Catar</option>
+                <option value="241-260">Suiza</option>
+            </optgroup>
+            <optgroup label="Grupo C">
+                <option value="261-280">Brasil</option>
+                <option value="281-300">Marruecos</option>
+                <option value="301-320">Haití</option>
+                <option value="321-340">Escocia</option>
+            </optgroup>
+            <optgroup label="Grupo D">
+                <option value="341-360">Estados Unidos</option>
+                <option value="361-380">Paraguay</option>
+                <option value="381-400">Australia</option>
+                <option value="401-420">Turquía</option>
+            </optgroup>
+            <optgroup label="Grupo E">
+                <option value="421-440">Alemania</option>
+                <option value="441-460">Curazao</option>
+                <option value="461-480">Costa de Marfil</option>
+                <option value="481-500">Ecuador</option>
+            </optgroup>
+            <optgroup label="Grupo F">
+                <option value="501-520">Países Bajos</option>
+                <option value="521-540">Japón</option>
+                <option value="541-560">Suecia</option>
+                <option value="561-580">Túnez</option>
+            </optgroup>
+            <optgroup label="Grupo G">
+                <option value="581-600">Bélgica</option>
+                <option value="601-620">Egipto</option>
+                <option value="621-640">RI de Irán</option>
+                <option value="641-660">Nueva Zelanda</option>
+            </optgroup>
+            <optgroup label="Grupo H">
+                <option value="661-680">España</option>
+                <option value="681-700">Cabo Verde</option>
+                <option value="701-720">Arabia Saudí</option>
+                <option value="721-740">Uruguay</option>
+            </optgroup>
+            <optgroup label="Grupo I">
+                <option value="741-760">Francia</option>
+                <option value="761-780">Senegal</option>
+                <option value="781-800">Irak</option>
+                <option value="801-820">Noruega</option>
+            </optgroup>
+            <optgroup label="Grupo J">
+                <option value="821-840">Argentina</option>
+                <option value="841-860">Argelia</option>
+                <option value="861-880">Austria</option>
+                <option value="881-900">Jordania</option>
+            </optgroup>
+            <optgroup label="Grupo K">
+                <option value="901-920">Portugal</option>
+                <option value="921-940">RD de Congo</option>
+                <option value="941-960">Uzbekistán</option>
+                <option value="961-980">Colombia</option>
+            </optgroup>
+            <optgroup label="Grupo L">
+                <option value="981-1000">Inglaterra</option>
+                <option value="1001-1020">Croacia</option>
+                <option value="1021-1040">Ghana</option>
+                <option value="1041-1060">Panamá</option>
+            </optgroup>
         </select>
     </div>
 </header>
@@ -204,13 +244,11 @@
 
     window.filterByCountry = (range) => {
         document.querySelectorAll('.country-header-label').forEach(el => el.remove());
-
         if (range === 'ALL') {
             document.querySelectorAll('.section-group').forEach(el => el.style.display = 'block');
             document.querySelectorAll('.sticker').forEach(el => el.style.display = 'flex');
             return;
         }
-
         const [start, end] = range.split('-').map(Number);
         const select = document.getElementById('country-filter');
         const countryName = select.options[select.selectedIndex].text;
@@ -245,7 +283,7 @@
             if (snap.exists()) {
                 const friendData = snap.data();
                 let matches = 0;
-                for (let i = 1; i <= 980; i++) {
+                for (let i = 1; i <= 1060; i++) {
                     const el = document.getElementById(`s-${i}`);
                     const friendHasRepeat = friendData[i] && friendData[i].count > 1;
                     const iNeedIt = !myAlbum[i] || myAlbum[i].count === 0;
@@ -282,21 +320,21 @@
     }
 
     function updateAllUI() {
-        for (let i = 1; i <= 980; i++) updateStickerUI(i);
+        for (let i = 1; i <= 1060; i++) updateStickerUI(i);
     }
 
     function updateStats() {
         const owned = Object.values(myAlbum).filter(v => v.count > 0).length;
-        document.getElementById('progress-bar').style.width = (owned / 980 * 100) + "%";
-        document.getElementById('stats-text').innerText = `${owned} / 980`;
+        document.getElementById('progress-bar').style.width = (owned / 1060 * 100) + "%";
+        document.getElementById('stats-text').innerText = `${owned} / 1060`;
     }
 
     function createGrid() {
         const main = document.getElementById('album-content');
         const sections = [
             { t: "🏆 FIFA & Estadios", s: 1, e: 100, c: "FWC" },
-            { t: "⚽ Selecciones A - F", s: 101, e: 540, c: "A-F" },
-            { t: "⚽ Selecciones G - L", s: 541, e: 980, c: "G-L" }
+            { t: "⚽ Selecciones A - F", s: 101, e: 580, c: "A-F" },
+            { t: "⚽ Selecciones G - L", s: 581, e: 1060, c: "G-L" }
         ];
 
         sections.forEach(sec => {
