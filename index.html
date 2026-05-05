@@ -89,7 +89,7 @@
 <header>
     <div class="header-top">
         <h1 id="user-title">Cargando...</h1>
-        <div class="stats-pill" id="stats-text">0 / 1060</div>
+        <div class="stats-pill" id="stats-text">0 / 980</div>
     </div>
     <div class="progress-container"><div id="progress-bar"></div></div>
     
@@ -102,7 +102,6 @@
         <button class="btn-tool" onclick="shareApp()" style="border-color: var(--success); color: var(--success);">📲 Compartir</button>
     </div>
 
-    <!-- Filtro por País Actualizado -->
     <div class="controls">
         <select id="country-filter" class="btn-tool" style="width: 100%; border-color: var(--primary);" onchange="filterByCountry(this.value)">
             <option value="ALL">🔍 Buscar por País...</option>
@@ -173,10 +172,7 @@
                 <option value="961-980">Colombia</option>
             </optgroup>
             <optgroup label="Grupo L">
-                <option value="981-1000">Inglaterra</option>
-                <option value="1001-1020">Croacia</option>
-                <option value="1021-1040">Ghana</option>
-                <option value="1041-1060">Panamá</option>
+                <option value="981-1000" disabled>Inglaterra (Próximamente)</option>
             </optgroup>
         </select>
     </div>
@@ -273,7 +269,7 @@
     };
 
     window.compareAlbums = async function() {
-        const friend = prompt("¿Con quién quieres comparar? (Escribe su nombre)");
+        const friend = prompt("¿Con quién quieres comparar?");
         if (!friend) return;
         const friendId = `album_${friend.toLowerCase().trim().replace(/\s+/g, '_')}`;
         const friendRef = doc(db, "colecciones", friendId);
@@ -283,7 +279,7 @@
             if (snap.exists()) {
                 const friendData = snap.data();
                 let matches = 0;
-                for (let i = 1; i <= 1060; i++) {
+                for (let i = 1; i <= 980; i++) {
                     const el = document.getElementById(`s-${i}`);
                     const friendHasRepeat = friendData[i] && friendData[i].count > 1;
                     const iNeedIt = !myAlbum[i] || myAlbum[i].count === 0;
@@ -295,7 +291,7 @@
                         el.style.opacity = "0.2";
                     }
                 }
-                alert(`¡Éxito! ${friend} tiene ${matches} repetidas que tú necesitas.`);
+                alert(`¡Éxito! ${friend} tiene ${matches} repetidas que necesitas.`);
             }
         } catch (e) { console.error(e); }
         finally { document.getElementById('loading-overlay').style.display = 'none'; }
@@ -305,8 +301,7 @@
         const name = prompt("¿Para quién es el link?");
         if (name) {
             const url = `${window.location.origin}${window.location.pathname}?u=${encodeURIComponent(name)}`;
-            const text = encodeURIComponent(`⚽ ¡Lleva el control de tu álbum! Entra aquí: ${url}`);
-            window.open(`https://wa.me/?text=${text}`, '_blank');
+            window.open(`https://wa.me/?text=${encodeURIComponent('⚽ ¡Controla tu álbum Panini aquí: ' + url)}`, '_blank');
         }
     };
 
@@ -320,13 +315,13 @@
     }
 
     function updateAllUI() {
-        for (let i = 1; i <= 1060; i++) updateStickerUI(i);
+        for (let i = 1; i <= 980; i++) updateStickerUI(i);
     }
 
     function updateStats() {
         const owned = Object.values(myAlbum).filter(v => v.count > 0).length;
-        document.getElementById('progress-bar').style.width = (owned / 1060 * 100) + "%";
-        document.getElementById('stats-text').innerText = `${owned} / 1060`;
+        document.getElementById('progress-bar').style.width = (owned / 980 * 100) + "%";
+        document.getElementById('stats-text').innerText = `${owned} / 980`;
     }
 
     function createGrid() {
@@ -334,7 +329,7 @@
         const sections = [
             { t: "🏆 FIFA & Estadios", s: 1, e: 100, c: "FWC" },
             { t: "⚽ Selecciones A - F", s: 101, e: 580, c: "A-F" },
-            { t: "⚽ Selecciones G - L", s: 581, e: 1060, c: "G-L" }
+            { t: "⚽ Selecciones G - L", s: 581, e: 980, c: "G-L" }
         ];
 
         sections.forEach(sec => {
