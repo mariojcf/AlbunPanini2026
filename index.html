@@ -9,7 +9,7 @@
         :root {
             --primary: #800020; --accent: #d4af37; --bg: #f8f9fa;
             --card-bg: #ffffff; --text: #2d3436; --gray-light: #e0e0e0;
-            --gray-text: #636e72; --success: #27ae60;
+            --gray-text: #636e72; --success: #27ae60; --coca-cola: #fe001a;
         }
 
         body { 
@@ -60,6 +60,11 @@
         .sticker.owned { border: 2px solid var(--primary); background: #fff5f5; }
         .sticker.owned .num { color: var(--primary); }
         
+        /* Estilo para Coca-Cola */
+        .section-group[data-team="CC"] .section-title { color: var(--coca-cola); }
+        .section-group[data-team="CC"] .sticker.owned { border-color: var(--coca-cola); background: #fff0f1; }
+        .section-group[data-team="CC"] .sticker.owned .num { color: var(--coca-cola); }
+
         .badge-repeat {
             position: absolute; top: -5px; right: -5px; background: var(--accent);
             color: white; width: 18px; height: 18px; border-radius: 50%;
@@ -81,7 +86,7 @@
 <header>
     <div class="header-top">
         <h1 id="user-title">Mi Álbum Panini</h1>
-        <div class="stats-pill" id="stats-text">0 / 980</div>
+        <div class="stats-pill" id="stats-text">0 / 0</div>
     </div>
     <div class="progress-container"><div id="progress-bar"></div></div>
     
@@ -126,7 +131,7 @@
 
     let myAlbum = {};
     const groups = [
-        { name: "Intro", teams: [{code: "FWC", name: "Especiales", ids: ["00", "2", "3", "4", "5", "6", "7", "8"]}]},
+        { name: "Intro", teams: [{code: "FWC", name: "Especiales", ids: ["00", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18"]}]},
         { name: "Grupo A", teams: [{code: "MEX", name: "México"}, {code: "RSA", name: "Sudáfrica"}, {code: "KOR", name: "Rep. de Corea"}, {code: "CZE", name: "Rep. Checa"}] },
         { name: "Grupo B", teams: [{code: "CAN", name: "Canadá"}, {code: "BIH", name: "Bosnia y Herz."}, {code: "QAT", name: "Catar"}, {code: "SUI", name: "Suiza"}] },
         { name: "Grupo C", teams: [{code: "BRA", name: "Brasil"}, {code: "MAR", name: "Marruecos"}, {code: "HAI", name: "Haití"}, {code: "SCO", name: "Escocia"}] },
@@ -138,7 +143,8 @@
         { name: "Grupo I", teams: [{code: "FRA", name: "Francia"}, {code: "SEN", name: "Senegal"}, {code: "IRQ", name: "Irak"}, {code: "NOR", name: "Noruega"}] },
         { name: "Grupo J", teams: [{code: "ARG", name: "Argentina"}, {code: "ALG", name: "Argelia"}, {code: "AUT", name: "Austria"}, {code: "JOR", name: "Jordania"}] },
         { name: "Grupo K", teams: [{code: "POR", name: "Portugal"}, {code: "COD", name: "RD de Congo"}, {code: "UZB", name: "Uzbekistán"}, {code: "COL", name: "Colombia"}] },
-        { name: "Grupo L", teams: [{code: "ENG", name: "Inglaterra"}, {code: "CRO", name: "Croacia"}, {code: "GHA", name: "Ghana"}, {code: "PAN", name: "Panamá"}] }
+        { name: "Grupo L", teams: [{code: "ENG", name: "Inglaterra"}, {code: "CRO", name: "Croacia"}, {code: "GHA", name: "Ghana"}, {code: "PAN", name: "Panamá"}] },
+        { name: "Extras", teams: [{code: "CC", name: "Coca-Cola", ids: ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"]}]}
     ];
 
     onSnapshot(albumRef, (snap) => {
@@ -219,6 +225,7 @@
     };
 
     function updateUI() {
+        const totalStickers = document.querySelectorAll('.sticker').length;
         document.querySelectorAll('.sticker').forEach(el => {
             const data = myAlbum[el.id] || { count: 0 };
             el.className = `sticker ${data.count > 0 ? 'owned' : ''} ${data.count > 1 ? 'repeated' : ''}`;
@@ -234,8 +241,8 @@
             el.style.backgroundColor = "";
         });
         const owned = Object.values(myAlbum).filter(v => v.count > 0).length;
-        document.getElementById('progress-bar').style.width = (owned / 980 * 100) + "%";
-        document.getElementById('stats-text').innerText = `${owned} / 980`;
+        document.getElementById('progress-bar').style.width = (owned / totalStickers * 100) + "%";
+        document.getElementById('stats-text').innerText = `${owned} / ${totalStickers}`;
     }
 
     function init() {
@@ -255,10 +262,12 @@
                 const grid = document.createElement('div');
                 grid.className = 'grid';
                 
-                if(t.code === "FWC") {
+                if(t.ids) {
+                    // Para Especiales y Coca-Cola
                     t.ids.forEach(num => grid.appendChild(createSticker(t.code, num)));
                 } else {
-                    for(let i=0; i<=11; i++) grid.appendChild(createSticker(t.code, i));
+                    // Para selecciones nacionales: 20 estampitas (1 al 20)
+                    for(let i=1; i<=20; i++) grid.appendChild(createSticker(t.code, i));
                 }
                 sec.appendChild(grid); main.appendChild(sec);
             });
